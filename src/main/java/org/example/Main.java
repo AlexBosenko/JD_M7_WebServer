@@ -1,19 +1,66 @@
 package org.example;
 
-// Press Shift twice to open the Search Everywhere dialog and type `show whitespaces`,
-// then press Enter. You can now see whitespace characters in your code.
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.ServerSocket;
+import java.net.Socket;
+import java.util.StringJoiner;
+
 public class Main {
     public static void main(String[] args) {
-        // Press Opt+Enter with your caret at the highlighted text to see how
-        // IntelliJ IDEA suggests fixing it.
-        System.out.printf("Hello and welcome!");
+        try (ServerSocket socket = new ServerSocket(10000)) {
+            while (true) {
+                System.out.println("Wait for connection...");
+                Socket connection = socket.accept();
+                System.out.println("Client connection created...");
 
-        // Press Ctrl+R or click the green arrow button in the gutter to run the code.
-        for (int i = 1; i <= 5; i++) {
+                String request = readAll(connection);
+                System.out.println(request);
 
-            // Press Ctrl+D to start debugging your code. We have set one breakpoint
-            // for you, but you can always add more by pressing Cmd+F8.
-            System.out.println("i = " + i);
+            }
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    private static String readAll(Socket connection) throws InterruptedException, IOException {
+        Thread.sleep(1000);
+        byte[] buffer = new byte[20 * 1024];
+        InputStream is = connection.getInputStream();
+        int len = 0;
+        while (is.available() > 0) {
+            int read = is.read(buffer, len, is.available());
+            len += read;
+
+            Thread.sleep(1000);
+        }
+        return new String(buffer, 0, len);
+    }
+
+    private static HttpRequest getHttpRequest(String request) {
+        HttpRequest httpRequest = new HttpRequest();
+        String[] lines = request.replace("\r", "").split("\n");
+        if (lines.length > 0) {
+            String startLine = lines[0];
+            String[] startLineParts = startLine.split(" ");
+            httpRequest.setMethod(Method.valueOf(startLineParts[0]));
+            httpRequest.setPath(startLineParts[1]);
+            httpRequest.setProtocol(startLineParts[2]);
+
+            for (int i = 1; i < lines.length; i++) {
+                if (!lines[i].isEmpty()) {
+                    String[] headers = lines[i].split(": ");
+                    httpRequest.getHeaders().put(headers[0], headers[1]);
+                } else {
+                    StringJoiner body = new StringJoiner("\n");
+                    for (int j = i + 1; j < lines.length; j++) {
+                        body.add(lines[j]);
+                    }
+                    httpRequest.setBody(body.toString());
+                    break;
+                }
+            }
+        }
+        return httpRequest;
     }
 }

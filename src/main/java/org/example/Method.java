@@ -1,2 +1,6 @@
-package org.example;public enum Method {
+package org.example;
+
+public enum Method {
+    GET,
+    POST
 }
