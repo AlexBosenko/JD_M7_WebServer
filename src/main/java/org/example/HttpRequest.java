@@ -20,29 +20,35 @@ public class HttpRequest {
     }
 
     public static HttpRequest of(String text) {
-        HttpRequest httpRequest = new HttpRequest();
-        String[] lines = text.replace("\r", "").split("\n");
+        System.out.println("text = " + text);
+        HttpRequest request = new HttpRequest();
+
+        String[] lines = text.split("\n");
         if (lines.length > 0) {
+            for (int i = 0; i < lines.length; i++) {
+                lines[i] = lines[i].replace("\r", "");
+            }
+
             String startLine = lines[0];
             String[] startLineParts = startLine.split(" ");
-            httpRequest.setMethod(Method.valueOf(startLineParts[0]));
-            httpRequest.setPath(startLineParts[1]);
-            httpRequest.setProtocol(startLineParts[2]);
+            request.setMethod(Method.valueOf(startLineParts[0]));
+            request.setPath(startLineParts[1]);
+            request.setProtocol(startLineParts[2]);
 
             for (int i = 1; i < lines.length; i++) {
                 if (!lines[i].isEmpty()) {
                     String[] headers = lines[i].split(": ");
-                    httpRequest.getHeaders().put(headers[0], headers[1]);
+                    request.getHeaders().put(headers[0], headers[1]);
                 } else {
                     StringJoiner body = new StringJoiner("\n");
                     for (int j = i + 1; j < lines.length; j++) {
                         body.add(lines[j]);
                     }
-                    httpRequest.setBody(body.toString());
+                    request.setBody(body.toString());
                     break;
                 }
             }
         }
-        return httpRequest;
+        return request;
     }
 }
